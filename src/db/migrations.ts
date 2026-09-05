@@ -128,6 +128,17 @@ const migrations: Migration[] = [
       `).run();
     },
   },
+  {
+    version: 5,
+    name: '5_facts_event_id',
+    up: (db: Database.Database) => {
+      const cols = (db.prepare('PRAGMA table_info(facts)').all() as any[]).map((c: any) => c.name);
+      if (!cols.includes('event_id')) {
+        db.exec('ALTER TABLE facts ADD COLUMN event_id TEXT');
+        db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_facts_event ON facts(event_id)');
+      }
+    },
+  },
 ];
 
 export function runMigrations(db: Database.Database): void {

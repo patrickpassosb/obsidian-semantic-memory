@@ -10,6 +10,7 @@ export interface Config {
   chunkOverlapTokens: number;
   priorityPaths: string[];
   memoryDir: string;
+  memoryLedger: string;
   llmExtraction: boolean;
   indexConcurrency: number;
 }
@@ -62,6 +63,7 @@ export function loadConfig(): Config {
     chunkOverlapTokens,
     priorityPaths,
     memoryDir: process.env.MEMORY_DIR ?? 'Memory/Daily',
+    memoryLedger: process.env.MEMORY_LEDGER ?? 'System/Memory Events Ledger.md',
     llmExtraction: process.env.LLM_EXTRACTION === 'true',
     indexConcurrency: Math.max(1, Math.min(20, indexConcurrency)),
   };

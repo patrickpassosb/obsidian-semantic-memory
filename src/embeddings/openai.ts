@@ -59,6 +59,11 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
         this.cooldown.set(ci, Date.now() + 60_000);
         return this.embedWithRetry(batch, attempt + 1); // immediate retry on another key
       }
+      if (status === 401 || status === 403) {
+        this.cooldown.set(ci, Number.MAX_SAFE_INTEGER); // dead key — never use again this run
+        if (attempt < 40) return this.embedWithRetry(batch, attempt + 1);
+        throw e;
+      }
       if (status >= 500 && status < 600 && attempt < 10) {
         const waitMs = Math.max(Number(e?.headers?.get?.('retry-after')) * 1000 || 0, 1000 * 2 ** attempt, 2000);
         await new Promise(r => setTimeout(r, waitMs));

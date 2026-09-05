@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { loadConfig } from "./config";
 import { openDb } from "./db/client";
 import { runMigrations } from "./db/schema";
+import { replayLedger } from "./memory/lifecycle";
 import { indexVault } from "./indexer/pipeline";
 import { startWatcher } from "./watcher/watcher";
 import { retrieveContext } from "./retrieval/orchestrator";
@@ -20,6 +21,9 @@ function setup() {
   const config = loadConfig();
   const db = openDb(config.dbPath);
   runMigrations(db);
+  replayLedger(db, config.vaultPath, config.memoryLedger)
+    .then((n: number) => { if (n > 0) console.log(`[memory] replayed ${n} ledger event(s)`); })
+    .catch(() => {});
   let provider: EmbeddingProvider;
   if (config.embeddingProvider === "local") {
     provider = new LocalEmbeddingProvider(config.embeddingModel);

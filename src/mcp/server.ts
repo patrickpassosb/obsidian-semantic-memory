@@ -6,6 +6,7 @@ import { VectorIndex } from '../embeddings/vectorIndex';
 import { retrieveContext } from '../retrieval/orchestrator';
 import { lookupEntity } from '../retrieval/entityLookup';
 import { appendDailyMemory } from '../memory/writer';
+import { remember, factsFor } from '../memory/lifecycle';
 import type { Config } from '../config';
 import type { EmbeddingProvider } from '../embeddings/types';
 
@@ -13,7 +14,7 @@ export function createMcpTools(
   db: Database.Database,
   vectorIndex: VectorIndex,
   provider: EmbeddingProvider,
-  config: Pick<Config, 'vaultPath' | 'memoryDir' | 'priorityPaths'>
+  config: Pick<Config, 'vaultPath' | 'memoryDir' | 'priorityPaths' | 'memoryLedger'>
 ) {
   return {
     async vault_search(args: { query: string; topK?: number }) {
@@ -40,10 +41,13 @@ export function createMcpTools(
       return lookupEntity(db, args.name);
     },
 
-    async vault_facts(args: { entityName: string }) {
-      const entity = lookupEntity(db, args.entityName);
-      if (!entity) return [];
-      return db.prepare('SELECT * FROM facts WHERE subject_entity_id = ? ORDER BY updated_at DESC').all(entity.id) as any[];
+    async vault_facts(args: { entityName: string; asOf?: string; includeHistory?: boolean }) {
+      return factsFor(db, args.entityName, { asOf: args.asOf, includeHistory: args.includeHistory }) as any[];
+    },
+
+    /** The principal durable-memory verb: ledger-first, supersedes the current fact for the same subject+predicate. Returns a receipt. */
+    async vault_remember_fact(args: { subject: string; predicate: string; object: string; source?: string }) {
+      return remember(db, config.vaultPath, config.memoryLedger, args);
     },
 
     async vault_status(_args: {}) {
@@ -126,11 +130,26 @@ const TOOLS = [
     },
   },
   {
+    name: 'vault_remember_fact',
+    description: 'Durable memory write: stores (or supersedes) a fact about a subject. Ledger-first (survives index rebuild), temporal (closes the previous current fact for that subject+predicate). Returns a receipt. Use for "remember that…" statements.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        subject: { type: 'string' }, predicate: { type: 'string' }, object: { type: 'string' }, source: { type: 'string' },
+      },
+      required: ['subject', 'predicate', 'object'],
+    },
+  },
+  {
     name: 'vault_facts',
-    description: 'Get all known facts about an entity. Returns structured subject-predicate-object triples.',
+    description: 'Get facts for an entity. Default = facts currently valid (valid_to null). asOf = point-in-time, includeHistory = full temporal history.',
     inputSchema: {
       type: 'object' as const,
-      properties: { entityName: { type: 'string', description: 'Entity name to look up facts for' } },
+      properties: {
+        entityName: { type: 'string', description: 'Entity name to look up facts for' },
+        asOf: { type: 'string', description: 'ISO timestamp — facts valid at that time' },
+        includeHistory: { type: 'boolean', description: 'include superseded facts' },
+      },
       required: ['entityName'],
     },
   },
