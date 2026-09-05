@@ -4,6 +4,8 @@ export interface Config {
   embeddingProvider: 'openai' | 'local';
   openaiApiKey?: string;
   embeddingModel?: string;
+  embeddingBaseURL?: string;
+  embeddingDims?: number;
   chunkMaxTokens: number;
   chunkOverlapTokens: number;
   priorityPaths: string[];
@@ -54,6 +56,8 @@ export function loadConfig(): Config {
     embeddingProvider,
     openaiApiKey: process.env.OPENAI_API_KEY,
     embeddingModel: process.env.EMBEDDING_MODEL,
+    embeddingBaseURL: process.env.EMBEDDING_BASE_URL,
+    embeddingDims: process.env.EMBEDDING_DIMS ? parseInt(process.env.EMBEDDING_DIMS, 10) : undefined,
     chunkMaxTokens,
     chunkOverlapTokens,
     priorityPaths,

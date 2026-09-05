@@ -24,7 +24,7 @@ function setup() {
   if (config.embeddingProvider === "local") {
     provider = new LocalEmbeddingProvider(config.embeddingModel);
   } else {
-    provider = new OpenAIEmbeddingProvider(config.openaiApiKey!);
+    provider = new OpenAIEmbeddingProvider(config.openaiApiKey!.split(',').map(k => k.trim()).filter(Boolean), config.embeddingModel, config.embeddingBaseURL, config.embeddingDims);
   }
   const vectorIndex = new VectorIndex(db, provider.dimensions);
   vectorIndex.initTable();
