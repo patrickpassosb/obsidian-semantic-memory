@@ -114,7 +114,7 @@ program
       config.vaultPath,
       config.priorityPaths,
       config.memoryDir,
-      config.vaultPath + '/' + config.memoryLedger,
+      config.memoryLedger,
     );
     app.listen(Number(opts.port), "127.0.0.1", () =>
       console.log(`Listening on http://127.0.0.1:${opts.port}`),
