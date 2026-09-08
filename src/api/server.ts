@@ -57,10 +57,10 @@ export function createServer(
   });
 
   // Lifecycle-backed durable memory (ledger-first, supersedes, idempotent, returns receipt).
-  app.post('/memory/fact', (req: any, res: any) => {
+  app.post('/memory/fact', async (req: any, res: any) => {
     const { subject, predicate, object, source } = req.body;
     if (!subject || !predicate || !object) return void res.status(400).json({ error: 'subject, predicate, object required' });
-    try { res.json(remember(db, vaultPath, config_ledgerPath, { subject, predicate, object, source })); }
+    try { res.json(await remember(db, vaultPath, config_ledgerPath, { subject, predicate, object, source })); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
